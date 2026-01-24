@@ -37,17 +37,13 @@ def _should_retry(status_code: int) -> bool:
 
 
 def _response_detail(response: requests.Response) -> str:
-    json_method = getattr(response, "json", None)
-    if callable(json_method):
-        try:
-            payload = json_method()
-        except ValueError:
-            payload = None
-        except Exception:
-            payload = None
-        if payload not in (None, "", {}, []):
-            return str(payload)
-    return getattr(response, "text", "")
+    try:
+        payload = response.json()
+    except Exception:
+        payload = None
+    if payload not in (None, "", {}, []):
+        return str(payload)
+    return response.text
 
 
 @register_embedding_function
