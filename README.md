@@ -90,10 +90,15 @@ results = store.query(["greeting"], n_results=1)
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `OPENROUTER_API_KEY` | — | OpenRouter API key (enables OpenRouter provider) |
+| `OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` | Override OpenRouter base URL (advanced) |
 | `OPENROUTER_EMBEDDINGS_MODEL` | `openai/text-embedding-3-small` | Model for OpenRouter embeddings |
 | `OPENROUTER_EMBED_PROVIDER_JSON` | — | Provider routing config (JSON) |
 | `LOCAL_EMBEDDINGS_MODEL` | `sentence-transformers/all-MiniLM-L6-v2` | Model for local embeddings |
 | `EMBED_PROVIDER` | `auto` | Force provider: `auto`, `openrouter`, or `local` |
+
+## Advanced Usage (Best-Effort)
+
+`chromaroute` is optimized for OpenRouter, but includes a few intentional escape hatches for custom setups. These are not the primary path and are supported on a best-effort basis. See `docs/advanced.md`.
 
 ## License
 
