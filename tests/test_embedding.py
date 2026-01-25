@@ -136,6 +136,35 @@ def test_openrouter_embedding_http_error_hints(monkeypatch):
         embed_fn(["a"])
 
 
+@pytest.mark.parametrize("status_code", [401, 403])
+def test_openrouter_embedding_byok_hint_on_auth_error(monkeypatch, status_code):
+    """Add a conditional BYOK hint on auth failures."""
+    def fake_post(url, headers, json, timeout):
+        class Response:
+            def __init__(self) -> None:
+                self.status_code = status_code
+                self.text = "error"
+        return Response()
+
+    monkeypatch.setattr("requests.post", fake_post)
+
+    embed_fn = OpenRouterEmbeddingFunction(
+        model="openai/text-embedding-3-small",
+        api_key="hf_abc123",
+    )
+    with pytest.raises(ValueError) as excinfo:
+        embed_fn(["a"])
+    assert "BYOK/third-party provider key" in str(excinfo.value)
+
+    embed_fn = OpenRouterEmbeddingFunction(
+        model="openai/text-embedding-3-small",
+        api_key="sk-or-abc123",
+    )
+    with pytest.raises(ValueError) as excinfo:
+        embed_fn(["a"])
+    assert "BYOK/third-party provider key" not in str(excinfo.value)
+
+
 def test_openrouter_embedding_build_from_config(monkeypatch):
     """Test building from configuration dict."""
     config = {

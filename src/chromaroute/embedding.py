@@ -11,6 +11,7 @@ import os
 import time
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, Literal, cast
+from urllib.parse import urlparse
 
 import requests
 from chromadb.api.types import Documents, EmbeddingFunction, Embeddings
@@ -44,6 +45,20 @@ def _response_detail(response: requests.Response) -> str:
     if payload not in (None, "", {}, []):
         return str(payload)
     return response.text
+
+
+def _byok_hint(base_url: str, api_key: str | None, status_code: int) -> str:
+    if (
+        status_code in (401, 403)
+        and api_key
+        and not api_key.startswith("sk-or-")
+        and urlparse(base_url).hostname == "openrouter.ai"
+    ):
+        return (
+            " If this is a BYOK/third-party provider key, register it at "
+            "https://openrouter.ai/settings/integrations."
+        )
+    return ""
 
 
 @register_embedding_function
@@ -162,9 +177,14 @@ class OpenRouterEmbeddingFunction(EmbeddingFunction[Any]):
             hint = _HTTP_ERROR_HINTS.get(response.status_code, "")
             detail = _response_detail(response)
             detail_text = f" {detail}" if detail else ""
+            byok_hint = _byok_hint(
+                self.base_url,
+                self.api_key,
+                response.status_code,
+            )
             raise ValueError(
                 f"OpenRouter embeddings failed: HTTP {response.status_code}"
-                f"{detail_text}.{hint}"
+                f"{detail_text}.{hint}{byok_hint}"
             )
 
         data = response.json()
