@@ -81,17 +81,14 @@ def test_vector_store_add_documents_batches():
             return len(calls)
 
     class FakeClient:
-        def get_collection(self, name, embedding_function):
-            raise ValueError("not found")
-
-        def create_collection(self, name, embedding_function, metadata):
+        def get_or_create_collection(self, name, embedding_function, metadata):
             return FakeCollection()
 
     store = VectorStore.__new__(VectorStore)
     store.collection_name = "test"
     store.client = FakeClient()
     store.embedding_function = DummyEmbedding()
-    store.collection = store._get_or_create_collection()
+    store.collection = FakeCollection()
 
     store.add_documents(["a", "b", "c"], ids=None, batch_size=2)
     assert calls == [
@@ -114,14 +111,19 @@ def test_vector_store_query():
 
 def test_vector_store_with_embedding_function(monkeypatch):
     """Test VectorStore with provided embedding function."""
+    captured = {}
+
     class FakeClient:
-        def get_collection(self, name, embedding_function):
+        def get_or_create_collection(self, name, embedding_function, metadata):
+            captured["name"] = name
+            captured["embedding_function"] = embedding_function
+            captured["metadata"] = metadata
             return "collection"
 
     import types
 
     monkeypatch.setattr("chromaroute.vector_store.load_config", lambda: None)
-    fake_chromadb = types.SimpleNamespace(Client=lambda: FakeClient())
+    fake_chromadb = types.SimpleNamespace(EphemeralClient=lambda: FakeClient())
     monkeypatch.setitem(__import__("sys").modules, "chromadb", fake_chromadb)
 
     store = VectorStore(
@@ -129,6 +131,9 @@ def test_vector_store_with_embedding_function(monkeypatch):
         embedding_function=DummyEmbedding(),
     )
     assert store.collection == "collection"
+    assert captured["name"] == "test"
+    assert captured["metadata"] == {"hnsw:space": "cosine"}
+    assert captured["embedding_function"] is store.embedding_function
 
 
 def test_vector_store_count_and_delete_collection():

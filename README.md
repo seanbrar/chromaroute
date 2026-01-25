@@ -37,7 +37,7 @@ embed_fn = build_embedding_function()
 
 # Use with ChromaDB
 import chromadb
-client = chromadb.Client()
+client = chromadb.EphemeralClient()
 collection = client.create_collection(
     name="my_collection",
     embedding_function=embed_fn,

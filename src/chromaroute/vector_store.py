@@ -59,7 +59,7 @@ class VectorStore:
         self.client = client or (
             chromadb.PersistentClient(path=persist_path)
             if persist_path
-            else chromadb.Client()
+            else chromadb.EphemeralClient()
         )
 
         # Configure embedding function
@@ -73,30 +73,12 @@ class VectorStore:
                 embed_provider=embed_provider,
             )
 
-        self.collection = self._get_or_create_collection()
-
-    def _get_or_create_collection(self) -> Any:
-        """Get an existing collection or create a new one.
-
-        Returns:
-            ChromaDB collection instance.
-        """
-        from chromadb.errors import NotFoundError
-
-        try:
-            collection = self.client.get_collection(
-                self.collection_name,
-                embedding_function=self.embedding_function,
-            )
-            logger.info("Loaded existing collection: %s", self.collection_name)
-        except (ValueError, NotFoundError):
-            collection = self.client.create_collection(
-                name=self.collection_name,
-                embedding_function=self.embedding_function,
-                metadata={"hnsw:space": "cosine"},
-            )
-            logger.info("Created new collection: %s", self.collection_name)
-        return collection
+        self.collection = self.client.get_or_create_collection(
+            name=self.collection_name,
+            embedding_function=self.embedding_function,
+            metadata={"hnsw:space": "cosine"},
+        )
+        logger.info("Ready collection: %s", self.collection_name)
 
     def add_documents(
         self,
