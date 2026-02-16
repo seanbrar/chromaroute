@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-02-15
+
+### Added
+- `VectorStore.query_one()`: single-query convenience method returning flat result lists
+- `VectorStore.get()`: retrieve documents by ID, or list all with pagination
+
+### Documentation
+- Documented `store.collection` escape hatch for advanced ChromaDB features
+- Added note on NumPy `float32` values when using raw local embeddings
+
 ## [0.2.3] - 2026-01-25
 
 ### Changed

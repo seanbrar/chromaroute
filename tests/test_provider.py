@@ -136,6 +136,58 @@ def test_vector_store_with_embedding_function(monkeypatch):
     assert captured["embedding_function"] is store.embedding_function
 
 
+def test_vector_store_query_one():
+    """Test query_one returns flat (unwrapped) results."""
+    class FakeCollection:
+        def query(self, query_texts, n_results, include):
+            assert query_texts == ["greeting"]
+            return {
+                "ids": [["doc1", "doc2"]],
+                "documents": [["hello", "hi"]],
+                "distances": [[0.1, 0.2]],
+            }
+
+    store = VectorStore.__new__(VectorStore)
+    store.collection = FakeCollection()
+    results = store.query_one("greeting", n_results=2)
+    assert results == {
+        "ids": ["doc1", "doc2"],
+        "documents": ["hello", "hi"],
+        "distances": [0.1, 0.2],
+    }
+
+
+def test_vector_store_get_by_ids():
+    """Test get() retrieves documents by ID."""
+    class FakeCollection:
+        def get(self, **kwargs):
+            assert kwargs["ids"] == ["doc1", "doc3"]
+            assert kwargs["include"] == ["documents"]
+            assert "limit" not in kwargs
+            return {"ids": ["doc1", "doc3"], "documents": ["hello", "goodbye"]}
+
+    store = VectorStore.__new__(VectorStore)
+    store.collection = FakeCollection()
+    results = store.get(ids=["doc1", "doc3"])
+    assert results == {"ids": ["doc1", "doc3"], "documents": ["hello", "goodbye"]}
+
+
+def test_vector_store_get_all_with_pagination():
+    """Test get() with no IDs returns all, supports limit/offset."""
+    class FakeCollection:
+        def get(self, **kwargs):
+            assert "ids" not in kwargs
+            assert kwargs["limit"] == 5
+            assert kwargs["offset"] == 10
+            assert kwargs["include"] == ["documents"]
+            return {"ids": ["doc11"], "documents": ["page 3"]}
+
+    store = VectorStore.__new__(VectorStore)
+    store.collection = FakeCollection()
+    results = store.get(limit=5, offset=10)
+    assert results == {"ids": ["doc11"], "documents": ["page 3"]}
+
+
 def test_vector_store_count_and_delete_collection():
     """Test count passthrough and delete_collection call."""
     class FakeCollection:

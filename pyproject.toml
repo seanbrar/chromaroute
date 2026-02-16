@@ -1,6 +1,6 @@
 [project]
 name = "chromaroute"
-version = "0.2.3"
+version = "0.3.0"
 description = "Provider-agnostic embedding functions for ChromaDB with OpenRouter and local fallback support."
 readme = "README.md"
 requires-python = ">=3.11, <3.14"

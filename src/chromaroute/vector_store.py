@@ -118,6 +118,9 @@ class VectorStore:
 
         Returns:
             Query results containing documents and their distances.
+            Results are nested per query:
+            ``{"ids": [[...]], "documents": [[...]], "distances": [[...]]}``.
+            For single-query convenience, see :meth:`query_one`.
         """
         results = self.collection.query(
             query_texts=query_texts,
@@ -125,6 +128,60 @@ class VectorStore:
             include=["documents", "distances"],
         )
         return cast("dict[str, Any]", results)
+
+    def query_one(
+        self,
+        query_text: str,
+        n_results: int = 3,
+    ) -> dict[str, Any]:
+        """Query the collection with a single string.
+
+        Convenience wrapper around :meth:`query` that accepts a single query
+        and returns flat result lists instead of the nested-per-query format.
+
+        Args:
+            query_text: A single query string.
+            n_results: Number of results to return.
+
+        Returns:
+            Flat dict: ``{"ids": [...], "documents": [...], "distances": [...]}``.
+        """
+        results = self.query(query_texts=[query_text], n_results=n_results)
+        return {
+            "ids": results["ids"][0],
+            "documents": results["documents"][0],
+            "distances": results["distances"][0],
+        }
+
+    def get(
+        self,
+        ids: list[str] | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> dict[str, Any]:
+        """Retrieve documents from the collection.
+
+        Args:
+            ids: Optional list of document IDs to retrieve.
+                If *None*, returns all documents (subject to *limit*/*offset*).
+            limit: Maximum number of documents to return.
+            offset: Number of documents to skip before returning results.
+
+        Returns:
+            Dict with ``"ids"`` and ``"documents"`` lists.
+        """
+        kwargs: dict[str, Any] = {"include": ["documents"]}
+        if ids is not None:
+            kwargs["ids"] = ids
+        if limit is not None:
+            kwargs["limit"] = limit
+        if offset is not None:
+            kwargs["offset"] = offset
+        results = self.collection.get(**kwargs)
+        return {
+            "ids": results["ids"],
+            "documents": results["documents"],
+        }
 
     def count(self) -> int:
         """Return the number of documents in the collection."""

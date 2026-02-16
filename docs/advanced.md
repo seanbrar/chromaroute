@@ -26,3 +26,25 @@ embed_fn = OpenRouterEmbeddingFunction(
     base_url="https://api.openai.com/v1",
 )
 ```
+
+## Raw Embeddings from the Local Provider
+
+When using the `local` provider, `build_embedding_function()` returns vectors containing NumPy `float32` values. ChromaDB handles these natively, so normal `VectorStore` usage is unaffected. If you call the embedding function directly and need to JSON-serialize the output, cast to Python floats first:
+
+```python
+raw = embed_fn(["some text"])[0]
+json_safe = [float(x) for x in raw]
+```
+
+## Accessing the Full ChromaDB API
+
+`VectorStore` exposes common operations (`add_documents`, `query`, `query_one`, `get`, `count`, `delete_collection`). For advanced ChromaDB features — metadata filters, `update()`, `upsert()`, `where`/`where_document` queries — use the underlying collection directly:
+
+```python
+store = VectorStore("my_docs")
+
+# The ChromaDB Collection object is always accessible
+store.collection.update(ids=["doc1"], documents=["updated text"])
+store.collection.get(where={"category": "science"})
+store.collection.upsert(ids=["doc4"], documents=["new or updated"])
+```
